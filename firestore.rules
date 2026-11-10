@@ -1,0 +1,617 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Security Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isDeveloperAdmin() {
+      return isVerified() &&
+        request.auth.token.email is string &&
+        request.auth.token.email.size() <= 120 &&
+        request.auth.token.email == 'lindsayprachi@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasValidParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+    }
+
+    function isAllowedBangladeshiCategory(cat) {
+      return cat is string &&
+        cat.size() >= 6 &&
+        cat.size() <= 20 &&
+        cat in [
+          'Western Tops',
+          'Traditional Tops',
+          'Kurtis',
+          'Long Skirts',
+          'Trousers',
+          'Scarves'
+        ];
+    }
+
+    // Validation Blueprint 1: UserStyleProfile (/users/{userId})
+    function isValidUserStyleProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'displayName',
+          'colorTone',
+          'preferredFit',
+          'heightCm',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'colorTone',
+          'preferredFit',
+          'heightCm',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.uid is string &&
+        data.uid.size() >= 1 &&
+        data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == request.auth.uid &&
+        data.displayName is string &&
+        data.displayName.size() >= 1 &&
+        data.displayName.size() <= 80 &&
+        data.colorTone is string &&
+        data.colorTone.size() >= 4 &&
+        data.colorTone.size() <= 10 &&
+        data.colorTone in ['warm', 'cool', 'neutral'] &&
+        data.preferredFit is string &&
+        data.preferredFit.size() >= 7 &&
+        data.preferredFit.size() <= 12 &&
+        data.preferredFit in ['tailored', 'regular', 'relaxed'] &&
+        data.heightCm is int &&
+        data.heightCm >= 120 &&
+        data.heightCm <= 230 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 2: CatalogItem (/catalogItems/{itemId})
+    function isValidCatalogItem(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'name',
+          'category',
+          'colorTone',
+          'colorName',
+          'priceCents',
+          'fabric',
+          'description',
+          'imageDataUrl',
+          'visibility',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'name',
+          'category',
+          'colorTone',
+          'colorName',
+          'priceCents',
+          'fabric',
+          'description',
+          'imageDataUrl',
+          'visibility',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.ownerId is string &&
+        data.ownerId.size() >= 1 &&
+        data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.name is string &&
+        data.name.size() >= 2 &&
+        data.name.size() <= 120 &&
+        isAllowedBangladeshiCategory(data.category) &&
+        data.colorTone is string &&
+        data.colorTone.size() >= 4 &&
+        data.colorTone.size() <= 10 &&
+        data.colorTone in ['warm', 'cool'] &&
+        data.colorName is string &&
+        data.colorName.size() >= 2 &&
+        data.colorName.size() <= 60 &&
+        data.priceCents is int &&
+        data.priceCents >= 100000 &&
+        data.priceCents <= 500000 &&
+        data.fabric is string &&
+        data.fabric.size() >= 2 &&
+        data.fabric.size() <= 120 &&
+        data.description is string &&
+        data.description.size() >= 2 &&
+        data.description.size() <= 600 &&
+        data.imageDataUrl is string &&
+        data.imageDataUrl.size() >= 0 &&
+        data.imageDataUrl.size() <= 350000 &&
+        data.visibility is string &&
+        data.visibility.size() >= 6 &&
+        data.visibility.size() <= 10 &&
+        data.visibility in ['public', 'private'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 3: StorefrontConfig (/storefrontConfig/{configId})
+    function isValidStorefrontConfig(data) {
+      return data.keys().hasAll([
+          'updatedBy',
+          'heroImageDataUrl',
+          'deletedStarterIds',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'updatedBy',
+          'heroImageDataUrl',
+          'deletedStarterIds',
+          'updatedAt'
+        ]) &&
+        data.updatedBy is string &&
+        data.updatedBy.size() >= 1 &&
+        data.updatedBy.size() <= 128 &&
+        data.updatedBy.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.updatedBy == request.auth.uid &&
+        data.heroImageDataUrl is string &&
+        data.heroImageDataUrl.size() >= 0 &&
+        data.heroImageDataUrl.size() <= 350000 &&
+        data.deletedStarterIds is list &&
+        data.deletedStarterIds.size() <= 6 &&
+        data.deletedStarterIds.hasOnly([
+          'bd_kurti_jamdani_01',
+          'bd_tradtop_silk_02',
+          'bd_westtop_linen_03',
+          'bd_skirt_cotton_04',
+          'bd_trouser_linen_05',
+          'bd_scarf_muslin_06'
+        ]) &&
+        (
+          data.deletedStarterIds.size() == 0 ||
+          (data.deletedStarterIds[0] is string && data.deletedStarterIds[0].size() <= 64)
+        ) &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 4: SavedLook (/users/{userId}/savedLooks/{lookId})
+    function isValidSavedLook(data) {
+      return data.keys().hasAll([
+          'userId',
+          'garmentId',
+          'garmentName',
+          'colorTone',
+          'recommendedSize',
+          'lightingPreset',
+          'stylistNote',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId',
+          'garmentId',
+          'garmentName',
+          'colorTone',
+          'recommendedSize',
+          'lightingPreset',
+          'stylistNote',
+          'createdAt'
+        ]) &&
+        data.userId is string &&
+        data.userId.size() >= 1 &&
+        data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId == request.auth.uid &&
+        data.garmentId is string &&
+        data.garmentId.size() >= 1 &&
+        data.garmentId.size() <= 128 &&
+        data.garmentId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.garmentName is string &&
+        data.garmentName.size() >= 1 &&
+        data.garmentName.size() <= 120 &&
+        data.colorTone is string &&
+        data.colorTone.size() >= 4 &&
+        data.colorTone.size() <= 10 &&
+        data.colorTone in ['warm', 'cool'] &&
+        data.recommendedSize is string &&
+        data.recommendedSize.size() >= 1 &&
+        data.recommendedSize.size() <= 4 &&
+        data.recommendedSize in ['XS', 'S', 'M', 'L', 'XL'] &&
+        data.lightingPreset is string &&
+        data.lightingPreset.size() >= 4 &&
+        data.lightingPreset.size() <= 12 &&
+        data.lightingPreset in ['warm', 'daylight', 'cool'] &&
+        data.stylistNote is string &&
+        data.stylistNote.size() >= 0 &&
+        data.stylistNote.size() <= 600 &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint 5: WishlistItem (/users/{userId}/wishlist/{garmentId})
+    function isValidWishlistItem(data) {
+      return data.keys().hasAll([
+          'userId',
+          'garmentId',
+          'garmentName',
+          'category',
+          'colorTone',
+          'colorName',
+          'priceCents',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId',
+          'garmentId',
+          'garmentName',
+          'category',
+          'colorTone',
+          'colorName',
+          'priceCents',
+          'createdAt'
+        ]) &&
+        data.userId is string &&
+        data.userId.size() >= 1 &&
+        data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId == request.auth.uid &&
+        data.garmentId is string &&
+        data.garmentId.size() >= 1 &&
+        data.garmentId.size() <= 128 &&
+        data.garmentId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.garmentName is string &&
+        data.garmentName.size() >= 2 &&
+        data.garmentName.size() <= 120 &&
+        isAllowedBangladeshiCategory(data.category) &&
+        data.colorTone is string &&
+        data.colorTone.size() >= 4 &&
+        data.colorTone.size() <= 10 &&
+        data.colorTone in ['warm', 'cool'] &&
+        data.colorName is string &&
+        data.colorName.size() >= 2 &&
+        data.colorName.size() <= 60 &&
+        data.priceCents is int &&
+        data.priceCents >= 100000 &&
+        data.priceCents <= 500000 &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint 6: OrderRecord (/users/{userId}/orders/{orderId})
+    function isValidOrderRecord(data) {
+      return data.keys().hasAll([
+          'userId',
+          'orderNumber',
+          'itemCount',
+          'itemsSummary',
+          'subtotalCents',
+          'shippingCents',
+          'totalCents',
+          'paymentMethod',
+          'paymentRef',
+          'recipientName',
+          'shippingAddress',
+          'postalCode',
+          'phone',
+          'status',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId',
+          'orderNumber',
+          'itemCount',
+          'itemsSummary',
+          'subtotalCents',
+          'shippingCents',
+          'totalCents',
+          'paymentMethod',
+          'paymentRef',
+          'recipientName',
+          'shippingAddress',
+          'postalCode',
+          'phone',
+          'status',
+          'createdAt'
+        ]) &&
+        data.userId is string &&
+        data.userId.size() >= 1 &&
+        data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId == request.auth.uid &&
+        data.orderNumber is string &&
+        data.orderNumber.size() >= 4 &&
+        data.orderNumber.size() <= 32 &&
+        data.orderNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.itemCount is int &&
+        data.itemCount >= 1 &&
+        data.itemCount <= 50 &&
+        data.itemsSummary is string &&
+        data.itemsSummary.size() >= 2 &&
+        data.itemsSummary.size() <= 300 &&
+        data.subtotalCents is int &&
+        data.subtotalCents >= 100000 &&
+        data.subtotalCents <= 25000000 &&
+        data.shippingCents is int &&
+        data.shippingCents >= 0 &&
+        data.shippingCents <= 500000 &&
+        data.totalCents is int &&
+        data.totalCents >= 100000 &&
+        data.totalCents <= 25500000 &&
+        data.totalCents == data.subtotalCents + data.shippingCents &&
+        data.paymentMethod is string &&
+        data.paymentMethod.size() >= 3 &&
+        data.paymentMethod.size() <= 10 &&
+        data.paymentMethod in ['card', 'cod'] &&
+        data.paymentRef is string &&
+        data.paymentRef.size() >= 4 &&
+        data.paymentRef.size() <= 128 &&
+        data.paymentRef.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.recipientName is string &&
+        data.recipientName.size() >= 2 &&
+        data.recipientName.size() <= 100 &&
+        data.shippingAddress is string &&
+        data.shippingAddress.size() >= 4 &&
+        data.shippingAddress.size() <= 240 &&
+        data.postalCode is string &&
+        data.postalCode.size() >= 2 &&
+        data.postalCode.size() <= 20 &&
+        data.phone is string &&
+        data.phone.size() >= 5 &&
+        data.phone.size() <= 30 &&
+        data.status is string &&
+        data.status.size() >= 7 &&
+        data.status.size() <= 12 &&
+        data.status in ['confirmed', 'shipped', 'delivered'] &&
+        data.createdAt is timestamp;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isVerified() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserStyleProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if (
+        isVerified() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserStyleProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action: UpdateStylePreferences
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName',
+            'colorTone',
+            'preferredFit',
+            'heightCm',
+            'updatedAt'
+          ])
+        )
+      );
+
+      allow delete: if false;
+
+      // Subcollection 2: /users/{userId}/savedLooks/{lookId}
+      match /savedLooks/{lookId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(lookId) &&
+          isOwner(userId) &&
+          existing().userId == request.auth.uid &&
+          hasValidParentUser(userId);
+
+        allow list: if isSignedIn() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+
+        allow create: if isVerified() &&
+          isValidId(userId) &&
+          isValidId(lookId) &&
+          isOwner(userId) &&
+          isValidSavedLook(incoming()) &&
+          incoming().createdAt == request.time &&
+          hasValidParentUser(userId);
+
+        allow update: if false;
+
+        allow delete: if isVerified() &&
+          isValidId(userId) &&
+          isValidId(lookId) &&
+          isOwner(userId) &&
+          existing().userId == request.auth.uid &&
+          hasValidParentUser(userId);
+      }
+
+      // Subcollection 3: /users/{userId}/wishlist/{garmentId}
+      match /wishlist/{garmentId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(garmentId) &&
+          isOwner(userId) &&
+          existing().userId == request.auth.uid &&
+          hasValidParentUser(userId);
+
+        allow list: if isSignedIn() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+
+        allow create: if isVerified() &&
+          isValidId(userId) &&
+          isValidId(garmentId) &&
+          isOwner(userId) &&
+          isValidWishlistItem(incoming()) &&
+          incoming().garmentId == garmentId &&
+          incoming().createdAt == request.time &&
+          hasValidParentUser(userId);
+
+        allow update: if false;
+
+        allow delete: if isVerified() &&
+          isValidId(userId) &&
+          isValidId(garmentId) &&
+          isOwner(userId) &&
+          existing().userId == request.auth.uid &&
+          hasValidParentUser(userId);
+      }
+
+      // Subcollection 4: /users/{userId}/orders/{orderId}
+      match /orders/{orderId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(orderId) &&
+          isOwner(userId) &&
+          existing().userId == request.auth.uid &&
+          hasValidParentUser(userId);
+
+        allow list: if isSignedIn() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+
+        allow create: if isVerified() &&
+          isValidId(userId) &&
+          isValidId(orderId) &&
+          isOwner(userId) &&
+          isValidOrderRecord(incoming()) &&
+          incoming().status == 'confirmed' &&
+          incoming().createdAt == request.time &&
+          hasValidParentUser(userId);
+
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // Collection 5: /catalogItems/{itemId} (Developer-Only Create/Update/Delete & Private Reads)
+    match /catalogItems/{itemId} {
+      allow get: if isValidId(itemId) && (
+        existing().visibility == 'public' ||
+        (isDeveloperAdmin() && existing().ownerId == request.auth.uid)
+      );
+
+      allow list: if resource.data.visibility == 'public' ||
+        (isDeveloperAdmin() && resource.data.ownerId == request.auth.uid);
+
+      allow create: if isDeveloperAdmin() &&
+        isValidId(itemId) &&
+        isValidCatalogItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        hasValidParentUser(request.auth.uid);
+
+      allow update: if (
+        isDeveloperAdmin() &&
+        isValidId(itemId) &&
+        isValidCatalogItem(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        hasValidParentUser(request.auth.uid) && (
+          // Action 1: UploadOrReplacePhoto
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'imageDataUrl',
+            'updatedAt'
+          ]) ||
+          // Action 2: EditCatalogItemMetadata
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name',
+            'category',
+            'colorTone',
+            'colorName',
+            'priceCents',
+            'fabric',
+            'description',
+            'imageDataUrl',
+            'visibility',
+            'updatedAt'
+          ])
+        )
+      );
+
+      allow delete: if isDeveloperAdmin() &&
+        isValidId(itemId) &&
+        existing().ownerId == request.auth.uid &&
+        hasValidParentUser(request.auth.uid);
+    }
+
+    // Collection 6: /storefrontConfig/{configId} (Public Singleton Get, Developer-Only Create/Update)
+    match /storefrontConfig/{configId} {
+      allow get: if isValidId(configId) && configId == 'main';
+      allow list: if false;
+
+      allow create: if isDeveloperAdmin() &&
+        isValidId(configId) &&
+        configId == 'main' &&
+        isValidStorefrontConfig(incoming()) &&
+        incoming().updatedAt == request.time &&
+        hasValidParentUser(request.auth.uid);
+
+      allow update: if (
+        isDeveloperAdmin() &&
+        isValidId(configId) &&
+        configId == 'main' &&
+        isValidStorefrontConfig(incoming()) &&
+        incoming().updatedAt == request.time &&
+        hasValidParentUser(request.auth.uid) && (
+          // Action 1: UpdateHeroImage
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'updatedBy',
+            'heroImageDataUrl',
+            'updatedAt'
+          ]) ||
+          // Action 2: UpdateDeletedStarterIds
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'updatedBy',
+            'deletedStarterIds',
+            'updatedAt'
+          ]) ||
+          // Action 3: FullStorefrontConfigSync
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'updatedBy',
+            'heroImageDataUrl',
+            'deletedStarterIds',
+            'updatedAt'
+          ])
+        )
+      );
+
+      allow delete: if false;
+    }
+  }
+}

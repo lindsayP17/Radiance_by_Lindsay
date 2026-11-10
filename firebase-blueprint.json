@@ -1,0 +1,474 @@
+{
+  "entities": {
+    "UserStyleProfile": {
+      "title": "UserStyleProfile",
+      "description": "Stores non-PII personal style and undertone preferences for an authenticated RADIANCE Bangladesh shopper.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Authenticated Firebase user UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name shown in personal style edits.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "colorTone": {
+          "type": "string",
+          "description": "Preferred undertone color palette.",
+          "enum": ["warm", "cool", "neutral"],
+          "minLength": 4,
+          "maxLength": 10
+        },
+        "preferredFit": {
+          "type": "string",
+          "description": "Preferred garment silhouette fit.",
+          "enum": ["tailored", "regular", "relaxed"],
+          "minLength": 7,
+          "maxLength": 12
+        },
+        "heightCm": {
+          "type": "integer",
+          "description": "Shopper height in centimeters between 120 and 230."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of profile creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest profile update."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "colorTone",
+        "preferredFit",
+        "heightCm",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CatalogItem": {
+      "title": "CatalogItem",
+      "description": "Developer-managed Bangladeshi atelier clothing piece (Western tops, traditional tops, Kurtis, long skirts, trousers, scarves — excluding shalwar kameez and saris) including custom uploads and sample outfit edits.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the verified store developer (lindsayprachi@gmail.com) who manages this catalog piece.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Garment title.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Curated Bangladeshi apparel category (no shalwar kameez or saris).",
+          "enum": [
+            "Western Tops",
+            "Traditional Tops",
+            "Kurtis",
+            "Long Skirts",
+            "Trousers",
+            "Scarves"
+          ],
+          "minLength": 6,
+          "maxLength": 20
+        },
+        "colorTone": {
+          "type": "string",
+          "description": "Undertone harmony classification.",
+          "enum": ["warm", "cool"],
+          "minLength": 4,
+          "maxLength": 10
+        },
+        "colorName": {
+          "type": "string",
+          "description": "Editorial shade name.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "priceCents": {
+          "type": "integer",
+          "description": "Retail price in Bangladeshi Taka poisha (100 poisha = ৳1; 100000 to 500000 poisha, i.e., ৳1,000 to ৳5,000)."
+        },
+        "fabric": {
+          "type": "string",
+          "description": "Material composition.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "description": "Garment tailoring and drape notes.",
+          "minLength": 2,
+          "maxLength": 600
+        },
+        "imageDataUrl": {
+          "type": "string",
+          "description": "Optional compressed data URL or asset path for garment photography.",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Visibility state in storefront catalog.",
+          "enum": ["public", "private"],
+          "minLength": 6,
+          "maxLength": 10
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when piece was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when piece or photo was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "name",
+        "category",
+        "colorTone",
+        "colorName",
+        "priceCents",
+        "fabric",
+        "description",
+        "imageDataUrl",
+        "visibility",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StorefrontConfig": {
+      "title": "StorefrontConfig",
+      "description": "Singleton storefront configuration managed exclusively by the verified store developer for custom home screen photography and deleted sample outfit IDs.",
+      "type": "object",
+      "properties": {
+        "updatedBy": {
+          "type": "string",
+          "description": "UID of the verified store developer (lindsayprachi@gmail.com).",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "heroImageDataUrl": {
+          "type": "string",
+          "description": "Optional compressed data URL for custom home screen hero image (empty string uses default image).",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "deletedStarterIds": {
+          "type": "array",
+          "description": "Bounded list of sample starter garment IDs deleted by the developer (max 6)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest storefront configuration update."
+        }
+      },
+      "required": [
+        "updatedBy",
+        "heroImageDataUrl",
+        "deletedStarterIds",
+        "updatedAt"
+      ]
+    },
+    "SavedLook": {
+      "title": "SavedLook",
+      "description": "Virtual fitting room snapshot saved to a shopper's personal lookbook.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner UID matching parent user document.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "garmentId": {
+          "type": "string",
+          "description": "Identifier of the tried-on garment.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "garmentName": {
+          "type": "string",
+          "description": "Snapshot of the garment title.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "colorTone": {
+          "type": "string",
+          "description": "Undertone harmony of the look.",
+          "enum": ["warm", "cool"],
+          "minLength": 4,
+          "maxLength": 10
+        },
+        "recommendedSize": {
+          "type": "string",
+          "description": "Calculated fitting room size.",
+          "enum": ["XS", "S", "M", "L", "XL"],
+          "minLength": 1,
+          "maxLength": 4
+        },
+        "lightingPreset": {
+          "type": "string",
+          "description": "Studio lighting environment used in fitting room.",
+          "enum": ["warm", "daylight", "cool"],
+          "minLength": 4,
+          "maxLength": 12
+        },
+        "stylistNote": {
+          "type": "string",
+          "description": "Drape or undertone harmony notes.",
+          "minLength": 0,
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of saved look."
+        }
+      },
+      "required": [
+        "userId",
+        "garmentId",
+        "garmentName",
+        "colorTone",
+        "recommendedSize",
+        "lightingPreset",
+        "stylistNote",
+        "createdAt"
+      ]
+    },
+    "WishlistItem": {
+      "title": "WishlistItem",
+      "description": "Bookmarked catalog garment saved in an authenticated shopper's My Favorites wishlist.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner UID matching parent user document.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "garmentId": {
+          "type": "string",
+          "description": "Bookmarked catalog garment identifier matching document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "garmentName": {
+          "type": "string",
+          "description": "Snapshot of the garment title.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Curated Bangladeshi apparel category.",
+          "enum": [
+            "Western Tops",
+            "Traditional Tops",
+            "Kurtis",
+            "Long Skirts",
+            "Trousers",
+            "Scarves"
+          ],
+          "minLength": 6,
+          "maxLength": 20
+        },
+        "colorTone": {
+          "type": "string",
+          "description": "Undertone palette of the bookmarked garment.",
+          "enum": ["warm", "cool"],
+          "minLength": 4,
+          "maxLength": 10
+        },
+        "colorName": {
+          "type": "string",
+          "description": "Editorial shade name.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "priceCents": {
+          "type": "integer",
+          "description": "Retail price snapshot in BDT poisha (100000 to 500000 poisha, i.e., ৳1,000 to ৳5,000)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when item was bookmarked."
+        }
+      },
+      "required": [
+        "userId",
+        "garmentId",
+        "garmentName",
+        "category",
+        "colorTone",
+        "colorName",
+        "priceCents",
+        "createdAt"
+      ]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "Isolated per-user verified purchase and delivery record in BDT poisha containing shipping PII.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated buyer UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orderNumber": {
+          "type": "string",
+          "description": "Human-readable order reference.",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemCount": {
+          "type": "integer",
+          "description": "Total units purchased between 1 and 50."
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Compact summary of garments and sizes ordered.",
+          "minLength": 2,
+          "maxLength": 300
+        },
+        "subtotalCents": {
+          "type": "integer",
+          "description": "Merchandise subtotal in BDT poisha (100000 to 25000000)."
+        },
+        "shippingCents": {
+          "type": "integer",
+          "description": "Delivery fee in BDT poisha."
+        },
+        "totalCents": {
+          "type": "integer",
+          "description": "Exact sum of subtotalCents and shippingCents in BDT poisha."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Verified payment channel.",
+          "enum": ["card", "cod"],
+          "minLength": 3,
+          "maxLength": 10
+        },
+        "paymentRef": {
+          "type": "string",
+          "description": "Server-signed cryptographic payment verification token.",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "recipientName": {
+          "type": "string",
+          "description": "Shipping recipient full name.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "shippingAddress": {
+          "type": "string",
+          "description": "Area, road, house, and city delivery address in Bangladesh.",
+          "minLength": 4,
+          "maxLength": 240
+        },
+        "postalCode": {
+          "type": "string",
+          "description": "Bangladesh 4-digit or destination postal code.",
+          "minLength": 2,
+          "maxLength": 20
+        },
+        "phone": {
+          "type": "string",
+          "description": "Delivery contact mobile number.",
+          "minLength": 5,
+          "maxLength": 30
+        },
+        "status": {
+          "type": "string",
+          "description": "Order fulfillment status.",
+          "enum": ["confirmed", "shipped", "delivered"],
+          "minLength": 7,
+          "maxLength": 12
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of order placement."
+        }
+      },
+      "required": [
+        "userId",
+        "orderNumber",
+        "itemCount",
+        "itemsSummary",
+        "subtotalCents",
+        "shippingCents",
+        "totalCents",
+        "paymentMethod",
+        "paymentRef",
+        "recipientName",
+        "shippingAddress",
+        "postalCode",
+        "phone",
+        "status",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserStyleProfile" },
+      "description": "Owner-only style and undertone profile document."
+    },
+    "/catalogItems/{itemId}": {
+      "schema": { "$ref": "#/entities/CatalogItem" },
+      "description": "Storefront Bangladeshi apparel pieces, sample item overrides, and custom uploaded photography."
+    },
+    "/storefrontConfig/{configId}": {
+      "schema": { "$ref": "#/entities/StorefrontConfig" },
+      "description": "Publicly readable, developer-only writable singleton storefront settings document (configId == 'main')."
+    },
+    "/users/{userId}/savedLooks/{lookId}": {
+      "schema": { "$ref": "#/entities/SavedLook" },
+      "description": "Owner-only saved virtual fitting room looks."
+    },
+    "/users/{userId}/wishlist/{garmentId}": {
+      "schema": { "$ref": "#/entities/WishlistItem" },
+      "description": "Owner-only bookmarked catalog favorites for the My Favorites profile view."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "Owner-isolated immutable purchase orders in BDT containing shipping PII."
+    }
+  }
+}

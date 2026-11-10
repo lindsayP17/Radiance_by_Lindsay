@@ -1,0 +1,6 @@
+{
+  "name": "RADIANCE",
+  "description": "Bangladeshi contemporary apparel atelier in Dhaka offering warm and cool toned Kurtis, Western and traditional tops, long skirts, trousers, and scarves crafted in Jamdani, Dhakai muslin, Rajshahi silk, Tangail cotton, and linen from ৳1,000 to ৳5,000 BDT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
